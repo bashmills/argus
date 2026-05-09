@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.bashmills.argus",
+  "icon": "resources/icon.png",
+  "asar": true,
+  "productName": "Argus",
+  "directories": {
+    "output": "builds/${version}"
+  },
+  "files": ["dist-electron/**/*", "dist/**/*"],
+  "win": {
+    "artifactName": "${productName}-Win-${version}.${ext}",
+    "target": ["msi"]
+  }
+}

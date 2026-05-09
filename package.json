@@ -1,0 +1,51 @@
+{
+  "name": "argus",
+  "description": "Browse, filter and extract BG3 mod assets via localisation names",
+  "author": "Bash Mills",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": "24.15.0"
+  },
+  "scripts": {
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version",
+    "build:patch": "npm run version:patch && npm run build",
+    "build:minor": "npm run version:minor && npm run build",
+    "build:major": "npm run version:major && npm run build",
+    "build": "tsc && vite build && electron-builder",
+    "preview": "vite preview",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "electron-log": "^5.4.3",
+    "fast-xml-parser": "^5.7.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "sanitize-filename": "^1.6.4",
+    "sonner": "^2.0.7",
+    "tailwindcss": "^4.2.1",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@typescript-eslint/eslint-plugin": "^7.1.1",
+    "@typescript-eslint/parser": "^7.1.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^40.8.0",
+    "electron-builder": "^26.8.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "typescript": "^5.2.2",
+    "vite": "^7.3.1",
+    "vite-plugin-electron": "^0.28.6",
+    "vite-plugin-electron-renderer": "^0.14.5"
+  },
+  "main": "dist-electron/main.js"
+}
