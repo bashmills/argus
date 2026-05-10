@@ -88,3 +88,9 @@ export async function walk(directory: string, filter: string[]): Promise<string[
 
   return results.flat();
 }
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}

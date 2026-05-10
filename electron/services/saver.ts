@@ -1,10 +1,11 @@
-import { SourceData, Item } from "../../shared/types";
+import { AppProgress, Source, Item } from "../../shared/types";
+import { sleep } from "../utils/os";
 import log from "electron-log/main";
 import fs from "fs/promises";
 import path from "path";
 
 export interface Options {
-  onProgress?: (message: string) => void;
+  onAppProgress?: (appProgress: AppProgress) => void;
   folder: string;
   assets: Item[];
 }
@@ -14,16 +15,26 @@ interface Filepath {
   dest: string;
 }
 
-export async function saveAssets({ onProgress, assets, folder }: Options): Promise<void> {
-  onProgress?.("Saving assets...");
+const DELAY = 50;
+
+export async function saveAssets({ onAppProgress, assets, folder }: Options): Promise<void> {
+  const updateProgress = (count: number) => {
+    onAppProgress?.({ progress: { total: filepaths.length, count } });
+  };
+
+  onAppProgress?.({ message: "Saving assets..." });
   const filepaths = gatherFilepaths(assets, folder);
-  for (const filepath of filepaths) {
+  updateProgress(0);
+  for (let index = 0; index < filepaths.length; index++) {
+    const filepath = filepaths[index];
     await saveAsset(filepath);
+    updateProgress(index + 1);
+    await sleep(DELAY);
   }
 }
 
 function gatherFilepaths(assets: Item[], folder: string): Filepath[] {
-  const maybeAddSource = (data: SourceData) => {
+  const maybeAddSource = (data: Source) => {
     if (seen.has(data.path)) {
       return;
     }

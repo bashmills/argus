@@ -1,15 +1,19 @@
 import { useAppStore } from "../store/app-store";
+import { AppProgress } from "../../shared/types";
 import log from "electron-log/renderer";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
 export function useBackendEvents() {
-  const { setProgress } = useAppStore.getState();
+  const { setAppProgress } = useAppStore.getState();
 
   useEffect(() => {
-    const handleAppProgress = (message: string) => {
-      log.info(`Handling pak progress: ${message}`);
-      setProgress(message);
+    const handleAppProgress = (appProgress: AppProgress) => {
+      if (appProgress.message) {
+        log.info(`Handling pak progress: ${appProgress.message}`);
+      }
+
+      setAppProgress(appProgress);
     };
 
     const handleShowError = (error: Error) => {
@@ -24,5 +28,5 @@ export function useBackendEvents() {
       offAppProgress?.();
       offShowError?.();
     };
-  }, [setProgress]);
+  }, [setAppProgress]);
 }

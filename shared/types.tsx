@@ -1,13 +1,30 @@
-export type AppStatus = "waiting" | "processing" | "processed" | "saving";
+export type AppStatus = "processing" | "processed" | "exporting" | "waiting";
 
-export interface SourceData {
+export interface AppProgress {
+  message?: string;
+  progress?: {
+    total: number;
+    count: number;
+  };
+}
+
+export interface Lslib {
+  filepath: string;
+  error: string;
+}
+
+export interface Settings {
+  lslib: Lslib;
+}
+
+export interface Source {
   path: string;
   name: string;
 }
 
 export interface Visual {
-  textures: SourceData[];
-  source: SourceData;
+  textures: Source[];
+  source: Source;
 }
 
 export interface Item {
@@ -16,13 +33,4 @@ export interface Item {
   races?: string[];
   name: string;
   id: string;
-}
-
-export interface Settings {
-  lslib: Lslib;
-}
-
-export interface Lslib {
-  filepath: string;
-  error: string;
 }

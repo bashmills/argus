@@ -15,7 +15,7 @@ export function WaitingView() {
 
   return (
     <div className="w-full flex flex-col justify-center items-center">
-      <DropZone onDropped={handleProcessPak} onBrowse={onBrowse} />
+      <DropZone onDropped={handleProcessPak} onBrowse={onBrowse} icon="package" type="package" ext=".pak" />
     </div>
   );
 }

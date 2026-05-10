@@ -1,9 +1,9 @@
 import { useBackendEvents } from "./hooks/use-backend-handlers";
 import { ProcessingView } from "./components/views/processing-view";
 import { ProcessedView } from "./components/views/processed-view";
+import { ExportingView } from "./components/views/exporting-view";
 import { SettingsView } from "./components/views/settings-view";
 import { WaitingView } from "./components/views/waiting-view";
-import { SavingView } from "./components/views/saving-view";
 import { useAppStore } from "./store/app-store";
 import { Toaster } from "sonner";
 
@@ -19,8 +19,8 @@ export function App() {
       <div className="w-full flex flex-col justify-center items-center max-h-full max-w-5xl backdrop-blur-sm rounded-2xl shadow-2xl space-y-8 p-8 border border-gray-700/50 bg-gray-800/80">
         {appStatus === "processing" && <ProcessingView />}
         {appStatus === "processed" && <ProcessedView />}
+        {appStatus === "exporting" && <ExportingView />}
         {appStatus === "waiting" && <WaitingView />}
-        {appStatus === "saving" && <SavingView />}
       </div>
     </div>
   );

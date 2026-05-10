@@ -1,7 +1,7 @@
 import { validateLslibPath, loadSettings, saveSettings } from "./services/settings";
 import { BrowserWindow, ipcMain, app, dialog } from "electron";
+import { AppProgress, Settings, Item } from "../shared/types";
 import { processPak } from "./services/processor";
-import { Settings, Item } from "../shared/types";
 import { getCacheDirectory } from "./utils/os";
 import { APP_ROOT, DIRNAME } from "./utils/os";
 import { saveAssets } from "./services/saver";
@@ -65,8 +65,8 @@ ipcMain.handle("process-pak", async (event, filepath: string) => {
   try {
     log.info(`Processing pak: ${filepath}`);
     const results = await processPak({
-      onProgress: (message) => {
-        event.sender.send("app-progress", message);
+      onAppProgress: (appProgress: AppProgress) => {
+        event.sender.send("app-progress", appProgress);
       },
       filepath,
     });
@@ -106,8 +106,8 @@ ipcMain.handle("export-assets", async (event, assets: Item[], folder: string) =>
   try {
     log.info(`Exporting assets: ${assets.length} items`);
     await saveAssets({
-      onProgress: (message) => {
-        event.sender.send("app-progress", message);
+      onAppProgress: (appProgress: AppProgress) => {
+        event.sender.send("app-progress", appProgress);
       },
       folder,
       assets,

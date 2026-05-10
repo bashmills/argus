@@ -7,7 +7,7 @@ import { toast } from "sonner";
 const DELAY = 500;
 
 export function useHandlers() {
-  const { updateStatus, setAppStatus, reset } = useAppStore.getState();
+  const { updateAppStatus, setAppStatus, reset } = useAppStore.getState();
 
   return {
     // Export assets handler
@@ -19,7 +19,7 @@ export function useHandlers() {
         return;
       }
 
-      setAppStatus("saving");
+      setAppStatus("exporting");
       const success = await invokeWithSleep(() => window.backend?.exportAssets(assets, folder), DELAY);
       if (!success) {
         log.info("Export assets failed");
@@ -43,7 +43,7 @@ export function useHandlers() {
         return;
       }
 
-      updateStatus("processed", items);
+      updateAppStatus("processed", items);
       toast.success("Pak processed");
       log.info("Process pak handled");
     },

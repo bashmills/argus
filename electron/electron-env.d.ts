@@ -2,7 +2,7 @@
 
 interface Window {
   backend: {
-    onAppProgress: (callback: (message: string) => void) => () => void;
+    onAppProgress: (callback: (appProgress: AppProgress) => void) => () => void;
     onShowError: (callback: (error: Error) => void) => () => void;
 
     processPak: (file: File | string) => Promise<Item[]>;

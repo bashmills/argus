@@ -1,6 +1,6 @@
 import { LsxRegion, gatherAttributesValues, getChildNodes, getAttribute, findNodes, loadLsx } from "../utils/lsx";
-import { getCacheDirectory, doesExist, walk } from "../utils/os";
-import { SourceData, Item, Visual } from "../../shared/types";
+import { getCacheDirectory, doesExist, sleep, walk } from "../utils/os";
+import { AppProgress, Source, Visual, Item } from "../../shared/types";
 import { convert, extract } from "../utils/lslib";
 import { RACES } from "../constants/races";
 import { getLslibPath } from "./settings";
@@ -11,7 +11,7 @@ import crypto from "crypto";
 import path from "path";
 
 export interface Options {
-  onProgress?: (message: string) => void;
+  onAppProgress?: (appProgress: AppProgress) => void;
   filepath: string;
 }
 
@@ -43,33 +43,46 @@ interface Info {
 
 const CONVERT_EXTENSIONS = [".loca", ".lsb", ".lsf", ".lsj"];
 const IMPORT_EXTENSIONS = [".lsx", ".xml"];
+const DELAY = 5;
 
 export async function processPak(options: Options): Promise<Item[]> {
-  options.onProgress?.("Processing package...");
+  options.onAppProgress?.({ message: "Processing package..." });
   const info = await buildInfo(options.filepath);
   await extractPackage(options, info);
   await convertAssets(options, info);
   const data = await importData(options, info);
   const items = await buildItems(options, info, data);
-  const merged = mergeItems(items);
-  return merged;
+  return mergeItems(options, items);
 }
 
-async function extractPackage({ onProgress, filepath }: Options, { outputPath, lslibPath }: Info): Promise<void> {
-  onProgress?.("Extracting package using lslib...");
+async function extractPackage({ onAppProgress, filepath }: Options, { outputPath, lslibPath }: Info): Promise<void> {
+  onAppProgress?.({ message: "Extracting package..." });
   await extract(lslibPath, outputPath, filepath);
+  await sleep(DELAY);
 }
 
-async function convertAssets({ onProgress }: Options, { outputPath, lslibPath }: Info): Promise<void> {
-  onProgress?.("Converting assets using lslib...");
+async function convertAssets({ onAppProgress }: Options, { outputPath, lslibPath }: Info): Promise<void> {
+  const updateProgress = (count: number) => {
+    onAppProgress?.({ progress: { total: filepaths.length, count } });
+  };
+
+  onAppProgress?.({ message: "Converting assets..." });
   const filepaths = await walk(outputPath, CONVERT_EXTENSIONS);
-  for (const filepath of filepaths) {
+  updateProgress(0);
+  for (let index = 0; index < filepaths.length; index++) {
+    const filepath = filepaths[index];
     await convert(lslibPath, filepath);
+    updateProgress(index + 1);
+    await sleep(DELAY);
   }
 }
 
-async function importData({ onProgress }: Options, { outputPath }: Info): Promise<Data> {
-  onProgress?.("Importing assets...");
+async function importData({ onAppProgress }: Options, { outputPath }: Info): Promise<Data> {
+  const updateProgress = (count: number) => {
+    onAppProgress?.({ progress: { total: filepaths.length, count } });
+  };
+
+  onAppProgress?.({ message: "Importing assets..." });
   const data: Data = {
     visualData: new Map<string, VisualData>(),
     materialData: new Map<string, string[]>(),
@@ -79,86 +92,104 @@ async function importData({ onProgress }: Options, { outputPath }: Info): Promis
   };
 
   const filepaths = await walk(outputPath, IMPORT_EXTENSIONS);
-  for (const filepath of filepaths) {
+  updateProgress(0);
+  for (let index = 0; index < filepaths.length; index++) {
+    const filepath = filepaths[index];
     const extension = path.extname(filepath).toLowerCase();
-    if (extension === ".lsx") {
-      await importLsx(filepath, data);
+    switch (extension) {
+      case ".lsx":
+        await importLsx(filepath, data);
+        break;
+      case ".xml":
+        await importXml(filepath, data);
+        break;
     }
 
-    if (extension === ".xml") {
-      await importXml(filepath, data);
-    }
+    updateProgress(index + 1);
+    await sleep(DELAY);
   }
 
   return data;
 }
 
-export async function buildItems({ onProgress }: Options, { outputPath }: Info, data: Data): Promise<Item[]> {
-  const createSourceData = (source: string): SourceData => {
+export async function buildItems({ onAppProgress }: Options, { outputPath }: Info, data: Data): Promise<Item[]> {
+  const createSource = (source: string): Source => {
     return { path: path.join(outputPath, source), name: path.basename(source) };
   };
 
-  onProgress?.("Indexing assets...");
-  const items: Item[] = [];
-  for (const assetData of data.assetData) {
-    const visuals: Visual[] = [];
-    for (const visual of assetData.visuals) {
-      const visualData = data.visualData.get(visual);
-      if (!visualData) {
-        continue;
-      }
+  const updateProgress = (count: number) => {
+    onAppProgress?.({ progress: { total: data.assetData.length, count } });
+  };
 
-      const textures: SourceData[] = [];
-      const seen = new Set<string>();
-      for (const material of visualData.materials) {
-        const ids = data.materialData.get(material);
-        if (!ids) {
+  onAppProgress?.({ message: "Indexing assets..." });
+  const items: Item[] = [];
+  updateProgress(0);
+
+  for (let index = 0; index < data.assetData.length; index++) {
+    try {
+      const assetData = data.assetData[index];
+      const visuals: Visual[] = [];
+      for (const visual of assetData.visuals) {
+        const visualData = data.visualData.get(visual);
+        if (!visualData) {
           continue;
         }
 
-        for (const id of ids) {
-          const texture = data.textureData.get(id);
-          if (!texture) {
+        const seen = new Set<string>();
+        const textures: Source[] = [];
+        for (const material of visualData.materials) {
+          const ids = data.materialData.get(material);
+          if (!ids) {
             continue;
           }
 
-          const filepath = path.join(outputPath, texture);
-          const exists = await doesExist(filepath);
-          if (!exists) {
-            continue;
-          }
+          for (const id of ids) {
+            const texture = data.textureData.get(id);
+            if (!texture) {
+              continue;
+            }
 
-          if (seen.has(texture)) {
-            continue;
-          }
+            const filepath = path.join(outputPath, texture);
+            const exists = await doesExist(filepath);
+            if (!exists) {
+              continue;
+            }
 
-          textures.push(createSourceData(texture));
-          seen.add(texture);
+            if (seen.has(texture)) {
+              continue;
+            }
+
+            textures.push(createSource(texture));
+            seen.add(texture);
+          }
         }
+
+        const source = createSource(visualData.source);
+        visuals.push({
+          textures,
+          source,
+        });
       }
 
-      const source = createSourceData(visualData.source);
-      visuals.push({
-        textures,
-        source,
+      const races = assetData.races?.map((x) => RACES.get(x) ?? "Unknown Race") ?? undefined;
+      const name = data.locData.get(assetData.handle);
+      const slots = assetData.slots;
+      const id = assetData.id;
+      if (visuals.length === 0 || !name || !id) {
+        continue;
+      }
+
+      items.push({
+        visuals,
+        slots,
+        races,
+        name,
+        id,
       });
+    } finally {
+      updateProgress(index + 1);
+      await sleep(DELAY);
     }
-
-    const races = assetData.races?.map((x) => RACES.get(x) ?? "Unknown Race") ?? undefined;
-    const name = data.locData.get(assetData.handle);
-    const slots = assetData.slots;
-    const id = assetData.id;
-    if (visuals.length === 0 || !name || !id) {
-      continue;
-    }
-
-    items.push({
-      visuals,
-      slots,
-      races,
-      name,
-      id,
-    });
   }
 
   if (items.length === 0) {
@@ -168,7 +199,7 @@ export async function buildItems({ onProgress }: Options, { outputPath }: Info, 
   return items;
 }
 
-function mergeItems(items: Item[]): Item[] {
+async function mergeItems({ onAppProgress }: Options, items: Item[]): Promise<Item[]> {
   const normalizeItem = (item: Item): string => {
     return JSON.stringify([item.visuals.map((v) => ({ textures: v.textures.map((t) => t.path).sort(), source: v.source.path })).sort((a, b) => a.source.localeCompare(b.source)), item.name]);
   };
@@ -177,21 +208,34 @@ function mergeItems(items: Item[]): Item[] {
     return crypto.createHash("sha1").update(data).digest("hex");
   };
 
-  const merged = new Map<string, Item>();
-  for (const item of items) {
-    const key = buildKey(normalizeItem(item));
-    const existing = merged.get(key);
-    if (existing) {
-      existing.slots?.push(...(item.slots ?? []));
-      existing.races?.push(...(item.races ?? []));
-      continue;
-    }
+  const updateProgress = (count: number) => {
+    onAppProgress?.({ progress: { total: items.length, count } });
+  };
 
-    merged.set(key, {
-      ...item,
-      slots: [...(item.slots ?? [])],
-      races: [...(item.races ?? [])],
-    });
+  onAppProgress?.({ message: "Merging assets..." });
+  const merged = new Map<string, Item>();
+  updateProgress(0);
+
+  for (let index = 0; index < items.length; index++) {
+    try {
+      const item = items[index];
+      const key = buildKey(normalizeItem(item));
+      const existing = merged.get(key);
+      if (existing) {
+        existing.slots?.push(...(item.slots ?? []));
+        existing.races?.push(...(item.races ?? []));
+        continue;
+      }
+
+      merged.set(key, {
+        ...item,
+        slots: [...(item.slots ?? [])],
+        races: [...(item.races ?? [])],
+      });
+    } finally {
+      updateProgress(index + 1);
+      await sleep(DELAY);
+    }
   }
 
   const results = [...merged.values()];

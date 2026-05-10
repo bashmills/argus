@@ -1,10 +1,10 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer, webUtils } from "electron";
-import { Settings, Item } from "../shared/types";
+import { AppProgress, Settings, Item } from "../shared/types";
 
 contextBridge.exposeInMainWorld("backend", {
-  onAppProgress: (callback: (message: string) => void) => {
-    const listener = (_: IpcRendererEvent, message: string) => {
-      callback(message);
+  onAppProgress: (callback: (appProgress: AppProgress) => void) => {
+    const listener = (_: IpcRendererEvent, appProgress: AppProgress) => {
+      callback(appProgress);
     };
     ipcRenderer.on("app-progress", listener);
     return () => {

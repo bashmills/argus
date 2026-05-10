@@ -4,9 +4,12 @@ import { Icon } from "./icon";
 export interface Props {
   onDropped: (file: File) => void;
   onBrowse: () => void;
+  icon: string;
+  type: string;
+  ext: string;
 }
 
-export function DropZone({ onDropped, onBrowse }: Props) {
+export function DropZone({ onDropped, onBrowse, icon, type, ext }: Props) {
   const [isDragging, setIsDragging] = useState(false);
 
   const onDrop = async (event: React.DragEvent) => {
@@ -36,10 +39,10 @@ export function DropZone({ onDropped, onBrowse }: Props) {
         onDrop={onDrop}
         type="button"
       >
-        <Icon className="size-32" icon="upload" />
+        <Icon className="size-32" icon={icon} />
         <div className="w-full flex flex-col justify-center items-center space-y-3">
           <p className="text-sm text-gray-400 font-medium">
-            Drag and drop a package (<span className="text-white">.pak</span>) file here
+            Drag and drop a {type} (<span className="text-white">{ext}</span>) file here
           </p>
           <p className="text-xs text-gray-500">
             Or click to <span className="text-white">browse</span> your files
