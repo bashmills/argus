@@ -35,7 +35,7 @@ async function write({ configPath }: Info, data: string) {
 async function read({ configPath }: Info): Promise<Config | null> {
   try {
     const data = await fs.readFile(configPath, "utf-8");
-    const config = JSON.parse(data);
+    const config = JSON.parse(data) as Config;
     return config;
   } catch {
     return null;

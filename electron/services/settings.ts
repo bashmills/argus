@@ -40,6 +40,10 @@ export async function getLslibPath(): Promise<string> {
 }
 
 async function checkLslibPath(lslibPath: string): Promise<string> {
+  if (!lslibPath) {
+    return "This is a required field";
+  }
+
   const exists = await doesExist(lslibPath);
   if (!exists) {
     return "Path does not exist";

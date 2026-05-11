@@ -19,9 +19,9 @@ export function ItemRow({ onToggle, selected, item }: Props) {
       <div className="flex-1 min-w-0">
         <p className="font-medium text-white truncate">{item.visuals.map((x) => x.source.name).join(", ")}</p>
         <p className="text-gray-400 truncate">{item.name}</p>
-        <p className="text-xs text-gray-500 truncate">{textures.length} textures</p>
-        {item.slots && <p className="text-xs text-gray-500 truncate">{item.slots.join(", ")}</p>}
         {item.races && <p className="text-xs text-gray-500 truncate">{item.races.join(", ")}</p>}
+        {item.slots && <p className="text-xs text-gray-500 truncate">{item.slots.join(", ")}</p>}
+        <p className="text-xs text-gray-500 truncate">{textures.length} textures</p>
       </div>
     </button>
   );

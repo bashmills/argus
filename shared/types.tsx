@@ -1,11 +1,11 @@
 export type AppStatus = "processing" | "processed" | "exporting" | "waiting";
 
 export interface AppProgress {
-  message?: string;
   progress?: {
     total: number;
     count: number;
   };
+  message?: string;
 }
 
 export interface Lslib {
@@ -20,6 +20,7 @@ export interface Settings {
 export interface Source {
   path: string;
   name: string;
+  id: string;
 }
 
 export interface Visual {
@@ -29,8 +30,8 @@ export interface Visual {
 
 export interface Item {
   visuals: Visual[];
-  slots?: string[];
   races?: string[];
+  slots?: string[];
   name: string;
   id: string;
 }

@@ -42,7 +42,7 @@ export function gatherAttributesValues(root: LsxNode, id: string): string[] {
 }
 
 export function gatherAttributes(root: LsxNode, id: string): LsxAttribute[] {
-  const nodes = findNodes(root);
+  const nodes = findChildNodes(root);
   const results: LsxAttribute[] = [];
   for (const node of nodes) {
     const attribute = getAttribute(node, id);
@@ -56,7 +56,7 @@ export function gatherAttributes(root: LsxNode, id: string): LsxAttribute[] {
   return results;
 }
 
-export function findNodes(root: LsxNode, id?: string): LsxNode[] {
+export function findChildNodes(root: LsxNode, id?: string): LsxNode[] {
   function walk(node: LsxNode) {
     if (!node) {
       return;

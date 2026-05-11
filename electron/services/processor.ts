@@ -1,6 +1,6 @@
-import { LsxRegion, gatherAttributesValues, getChildNodes, getAttribute, findNodes, loadLsx } from "../utils/lsx";
-import { getCacheDirectory, doesExist, sleep, walk } from "../utils/os";
+import { LsxRegion, gatherAttributesValues, findChildNodes, getChildNodes, getAttribute, loadLsx } from "../utils/lsx";
 import { AppProgress, Source, Visual, Item } from "../../shared/types";
+import { getCacheDirectory, sleep, walk } from "../utils/os";
 import { convert, extract } from "../utils/lslib";
 import { RACES } from "../constants/races";
 import { getLslibPath } from "./settings";
@@ -25,8 +25,8 @@ interface Data {
 
 interface AssetData {
   visuals: string[];
-  slots?: string[];
   races?: string[];
+  slots?: string[];
   handle: string;
   id: string;
 }
@@ -113,8 +113,8 @@ async function importData({ onAppProgress }: Options, { outputPath }: Info): Pro
 }
 
 export async function buildItems({ onAppProgress }: Options, { outputPath }: Info, data: Data): Promise<Item[]> {
-  const createSource = (source: string): Source => {
-    return { path: path.join(outputPath, source), name: path.basename(source) };
+  const createSource = (source: string, id: string): Source => {
+    return { path: path.join(outputPath, source), name: path.basename(source), id };
   };
 
   const updateProgress = (count: number) => {
@@ -149,29 +149,23 @@ export async function buildItems({ onAppProgress }: Options, { outputPath }: Inf
               continue;
             }
 
-            const filepath = path.join(outputPath, texture);
-            const exists = await doesExist(filepath);
-            if (!exists) {
-              continue;
-            }
-
             if (seen.has(texture)) {
               continue;
             }
 
-            textures.push(createSource(texture));
+            textures.push(createSource(texture, id));
             seen.add(texture);
           }
         }
 
-        const source = createSource(visualData.source);
+        const source = createSource(visualData.source, visual);
         visuals.push({
           textures,
           source,
         });
       }
 
-      const races = assetData.races?.map((x) => RACES.get(x) ?? "Unknown Race") ?? undefined;
+      const races = assetData.races?.map((x) => RACES.get(x) ?? "Unknown Race");
       const name = data.locData.get(assetData.handle);
       const slots = assetData.slots;
       const id = assetData.id;
@@ -181,8 +175,8 @@ export async function buildItems({ onAppProgress }: Options, { outputPath }: Inf
 
       items.push({
         visuals,
-        slots,
         races,
+        slots,
         name,
         id,
       });
@@ -222,15 +216,15 @@ async function mergeItems({ onAppProgress }: Options, items: Item[]): Promise<It
       const key = buildKey(normalizeItem(item));
       const existing = merged.get(key);
       if (existing) {
-        existing.slots?.push(...(item.slots ?? []));
         existing.races?.push(...(item.races ?? []));
+        existing.slots?.push(...(item.slots ?? []));
         continue;
       }
 
       merged.set(key, {
         ...item,
-        slots: [...(item.slots ?? [])],
         races: [...(item.races ?? [])],
+        slots: [...(item.slots ?? [])],
       });
     } finally {
       updateProgress(index + 1);
@@ -240,8 +234,8 @@ async function mergeItems({ onAppProgress }: Options, items: Item[]): Promise<It
 
   const results = [...merged.values()];
   for (const result of results) {
-    result.slots = result.slots ? [...new Set(result.slots)].sort() : undefined;
     result.races = result.races ? [...new Set(result.races)].sort() : undefined;
+    result.slots = result.slots ? [...new Set(result.slots)].sort() : undefined;
   }
 
   return results;
@@ -294,10 +288,10 @@ function parseCharacterCreationRegion(region: LsxRegion, data: Data) {
 function parseTemplatesRegion(region: LsxRegion, data: Data) {
   const nodes = getChildNodes(region.node);
   for (const node of nodes) {
-    const visuals = findNodes(node, "Visuals")
+    const visuals = findChildNodes(node, "Visuals")
       .map((x) => gatherAttributesValues(x, "Object"))
       .flat();
-    const slots = findNodes(node, "Slot")
+    const slots = findChildNodes(node, "Slot")
       .map((x) => gatherAttributesValues(x, "Object"))
       .flat();
     const handle = getAttribute(node, "DisplayName")?.handle;
@@ -332,7 +326,7 @@ function parseVisualRegion(region: LsxRegion, data: Data) {
 function parseMaterialRegion(region: LsxRegion, data: Data) {
   const nodes = getChildNodes(region.node);
   for (const node of nodes) {
-    const textures = findNodes(node, "Texture2DParameters")
+    const textures = findChildNodes(node, "Texture2DParameters")
       .map((x) => gatherAttributesValues(x, "ID"))
       .flat();
     const id = getAttribute(node, "ID")?.value;
@@ -374,7 +368,7 @@ async function importXml(filepath: string, data: Data): Promise<void> {
 async function buildInfo(filepath: string): Promise<Info> {
   const extension = path.extname(filepath).toLowerCase();
   if (extension !== ".pak") {
-    throw new Error("Only pak files are supported");
+    throw new Error("Only .pak files are supported");
   }
 
   await fs.rm(getCacheDirectory(), { recursive: true, force: true });

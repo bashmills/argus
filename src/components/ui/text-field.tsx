@@ -18,7 +18,7 @@ export function TextField({ onChange, placeholder, inputMode, disabled, hidden, 
     <div className="w-full space-y-2">
       {!hidden && (
         <div className="flex items-center justify-between px-3 gap-2">
-          <label className="text-sm text-gray-400 text-left" htmlFor={label}>
+          <label className="text-sm text-gray-400 text-left truncate" htmlFor={label}>
             {children}
           </label>
           {error && <span className="text-xs text-red-400/50 text-right truncate">{error}</span>}
