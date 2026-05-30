@@ -249,6 +249,9 @@ async function importLsx(filepath: string, data: Data): Promise<void> {
       case "CharacterCreationAppearanceVisuals":
         parseCharacterCreationRegion(region, data);
         break;
+      case "CharacterCreationSharedVisuals":
+        parseCharacterCreationRegion(region, data);
+        break;
       case "Templates":
         parseTemplatesRegion(region, data);
         break;
@@ -268,17 +271,20 @@ async function importLsx(filepath: string, data: Data): Promise<void> {
 function parseCharacterCreationRegion(region: LsxRegion, data: Data) {
   const nodes = getChildNodes(region.node);
   for (const node of nodes) {
-    const visual = getAttribute(node, "VisualResource")?.value;
+    const visuals = asArray(getAttribute(node, "VisualResource")?.value);
     const handle = getAttribute(node, "DisplayName")?.handle;
-    const race = getAttribute(node, "RaceUUID")?.value;
     const id = getAttribute(node, "UUID")?.value;
-    if (!visual || !handle || !race || !id) {
+    if (visuals.length === 0 || !handle || !id) {
       continue;
     }
 
+    const races = asArray(getAttribute(node, "RaceUUID")?.value);
+    const slots = asArray(getAttribute(node, "SlotName")?.value);
+
     data.assetData.push({
-      visuals: [visual],
-      races: [race],
+      visuals,
+      races,
+      slots,
       handle,
       id,
     });
@@ -291,14 +297,15 @@ function parseTemplatesRegion(region: LsxRegion, data: Data) {
     const visuals = findChildNodes(node, "Visuals")
       .map((x) => gatherAttributesValues(x, "Object"))
       .flat();
-    const slots = findChildNodes(node, "Slot")
-      .map((x) => gatherAttributesValues(x, "Object"))
-      .flat();
     const handle = getAttribute(node, "DisplayName")?.handle;
     const id = getAttribute(node, "MapKey")?.value;
     if (visuals.length === 0 || !handle || !id) {
       continue;
     }
+
+    const slots = findChildNodes(node, "Slot")
+      .map((x) => gatherAttributesValues(x, "Object"))
+      .flat();
 
     data.assetData.push({
       visuals,
