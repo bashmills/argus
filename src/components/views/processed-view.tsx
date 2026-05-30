@@ -62,7 +62,7 @@ export function ProcessedView() {
         </div>
       </div>
       <DialogContents>
-        <ItemList onToggle={onToggle} selected={selected} items={items} />
+        <ItemList onToggle={onToggle} selected={selected} items={filtered} />
       </DialogContents>
       <div className="w-full flex flex-col justify-center items-center space-y-3">
         <p className="text-xs text-gray-500">
