@@ -8,7 +8,9 @@ interface Props {
 }
 
 export function ItemRow({ onToggle, selected, item }: Props) {
-  const textures = item.visuals.map((x) => x.textures).flat();
+  const materials = item.visuals.map((x) => x.materials).flat();
+  const virtualTextures = materials.map((x) => x.virtualTextures).flat();
+  const textures = materials.map((x) => x.textures).flat();
   const isSelected = selected.has(item.id);
 
   return (
@@ -17,11 +19,13 @@ export function ItemRow({ onToggle, selected, item }: Props) {
         <Icon className={`size-6 text-white transition-all duration-150 ${isSelected ? "opacity-100 scale-100" : "opacity-0 scale-0"}`} icon="check" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-white truncate">{item.visuals.map((x) => x.source.name).join(", ")}</p>
-        <p className="text-gray-400 truncate">{item.name}</p>
+        <p className="font-medium text-white truncate">{item.name}</p>
+        <p className="text-gray-400 truncate">{item.visuals.map((x) => x.source.name).join(", ")}</p>
+        <p className="text-xs text-gray-500 truncate">
+          {materials.length} materials • {virtualTextures.length} virtual textures • {textures.length} textures
+        </p>
         {item.races && <p className="text-xs text-gray-500 truncate">{item.races.join(", ")}</p>}
         {item.slots && <p className="text-xs text-gray-500 truncate">{item.slots.join(", ")}</p>}
-        <p className="text-xs text-gray-500 truncate">{textures.length} textures</p>
       </div>
     </button>
   );

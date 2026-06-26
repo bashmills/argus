@@ -18,13 +18,19 @@ export interface Settings {
 }
 
 export interface Source {
-  path: string;
-  name: string;
+  path?: string;
+  name?: string;
+  id: string;
+}
+
+export interface Material {
+  virtualTextures: Source[];
+  textures: Source[];
   id: string;
 }
 
 export interface Visual {
-  textures: Source[];
+  materials: Material[];
   source: Source;
 }
 

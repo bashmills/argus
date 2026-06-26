@@ -31,14 +31,15 @@ export async function saveAssets(options: Options): Promise<void> {
 }
 
 async function gatherFilepaths({ folder, assets }: Options): Promise<Result> {
-  const maybeAddSource = async (prefix: string, data: Source, indent: number) => {
-    const exists = await doesExist(data.path);
-    report.push(`${(!exists ? "*" : "").padEnd(indent)}${exists ? "[PRESENT]" : "[MISSING]"} ${prefix}: ${data.name} (${data.id})`);
-    if (seen.has(data.path)) {
+  const addSource = async (prefix: string, data: Source, indent: number) => {
+    if (!data.path || !data.name) {
+      report.push(`${"*".padEnd(indent)}[MISSING] ${prefix}: ${data.id}`);
       return;
     }
 
-    if (!exists) {
+    const exists = await doesExist(data.path);
+    report.push(`${(!exists ? "*" : "").padEnd(indent)}${exists ? "[PRESENT]" : "[MISSING]"} ${prefix}: ${data.name} (${data.id})`);
+    if (seen.has(data.path) || !exists) {
       return;
     }
 
@@ -46,6 +47,10 @@ async function gatherFilepaths({ folder, assets }: Options): Promise<Result> {
     const source = data.path;
     filepaths.push({ source, dest });
     seen.add(data.path);
+  };
+
+  const addString = async (prefix: string, data: string, indent: number) => {
+    report.push(`${"".padEnd(indent)}${prefix}: ${data}`);
   };
 
   const filepaths: Filepath[] = [];
@@ -67,10 +72,20 @@ async function gatherFilepaths({ folder, assets }: Options): Promise<Result> {
     report.push("--------------------------------------------------");
 
     for (const visual of asset.visuals) {
-      const { textures, source } = visual;
-      await maybeAddSource("Visual", source, 4);
-      for (const texture of textures) {
-        await maybeAddSource("Texture", texture, 8);
+      const { materials, source } = visual;
+      await addSource("Visual", source, 2);
+
+      for (const material of materials) {
+        const { virtualTextures, textures, id } = material;
+        await addString("Material", id, 4);
+
+        for (const virtualTexture of virtualTextures) {
+          await addSource("Virtual", virtualTexture, 6);
+        }
+
+        for (const texture of textures) {
+          await addSource("Texture", texture, 6);
+        }
       }
     }
 

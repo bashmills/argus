@@ -1,5 +1,5 @@
 import { LsxRegion, gatherAttributesValues, findChildNodes, getChildNodes, getAttribute, loadLsx } from "../utils/lsx";
-import { AppProgress, Source, Visual, Item } from "../../shared/types";
+import { AppProgress, Material, Source, Visual, Item } from "../../shared/types";
 import { getCacheDirectory, sleep, walk } from "../utils/os";
 import { convert, extract } from "../utils/lslib";
 import { RACES } from "../constants/races";
@@ -17,10 +17,15 @@ export interface Options {
 
 interface Data {
   visualData: Map<string, VisualData>;
-  materialData: Map<string, string[]>;
+  materialData: Map<string, MaterialData>;
   textureData: Map<string, string>;
   locData: Map<string, string>;
   assetData: AssetData[];
+}
+
+interface MaterialData {
+  virtualTextures: string[];
+  textures: string[];
 }
 
 interface AssetData {
@@ -85,7 +90,7 @@ async function importData({ onAppProgress }: Options, { outputPath }: Info): Pro
   onAppProgress?.({ message: "Importing assets..." });
   const data: Data = {
     visualData: new Map<string, VisualData>(),
-    materialData: new Map<string, string[]>(),
+    materialData: new Map<string, MaterialData>(),
     textureData: new Map<string, string>(),
     locData: new Map<string, string>(),
     assetData: [],
@@ -113,8 +118,12 @@ async function importData({ onAppProgress }: Options, { outputPath }: Info): Pro
 }
 
 export async function buildItems({ onAppProgress }: Options, { outputPath }: Info, data: Data): Promise<Item[]> {
-  const createSource = (source: string, id: string): Source => {
-    return { path: path.join(outputPath, source), name: path.basename(source), id };
+  const createSource = (source: string | undefined, id: string): Source => {
+    if (source) {
+      return { path: path.join(outputPath, source), name: path.basename(source), id };
+    }
+
+    return { id };
   };
 
   const updateProgress = (count: number) => {
@@ -135,32 +144,48 @@ export async function buildItems({ onAppProgress }: Options, { outputPath }: Inf
           continue;
         }
 
-        const seen = new Set<string>();
-        const textures: Source[] = [];
+        const seenMaterials = new Set<string>();
+        const materials: Material[] = [];
         for (const material of visualData.materials) {
-          const ids = data.materialData.get(material);
-          if (!ids) {
+          if (seenMaterials.has(material)) {
             continue;
           }
 
-          for (const id of ids) {
+          const entry: Material = { virtualTextures: [], textures: [], id: material };
+          const { virtualTextures, textures } = entry;
+          materials.push(entry);
+
+          seenMaterials.add(material);
+
+          const materialData = data.materialData.get(material);
+          if (!materialData) {
+            continue;
+          }
+
+          const seenTextures = new Set<string>();
+          for (const id of materialData.virtualTextures) {
+            if (seenTextures.has(id)) {
+              continue;
+            }
+
+            virtualTextures.push(createSource(undefined, id));
+            seenTextures.add(id);
+          }
+
+          for (const id of materialData.textures) {
+            if (seenTextures.has(id)) {
+              continue;
+            }
+
             const texture = data.textureData.get(id);
-            if (!texture) {
-              continue;
-            }
-
-            if (seen.has(texture)) {
-              continue;
-            }
-
             textures.push(createSource(texture, id));
-            seen.add(texture);
+            seenTextures.add(id);
           }
         }
 
         const source = createSource(visualData.source, visual);
         visuals.push({
-          textures,
+          materials,
           source,
         });
       }
@@ -195,7 +220,22 @@ export async function buildItems({ onAppProgress }: Options, { outputPath }: Inf
 
 async function mergeItems({ onAppProgress }: Options, items: Item[]): Promise<Item[]> {
   const normalizeItem = (item: Item): string => {
-    return JSON.stringify([item.visuals.map((v) => ({ textures: v.textures.map((t) => t.path).sort(), source: v.source.path })).sort((a, b) => a.source.localeCompare(b.source)), item.name]);
+    return JSON.stringify([
+      item.visuals
+        .map((v) => ({
+          virtualTextures: v.materials
+            .map((m) => m.virtualTextures.map((t) => t.id))
+            .flat()
+            .sort(),
+          textures: v.materials
+            .map((m) => m.textures.map((t) => t.id))
+            .flat()
+            .sort(),
+          source: v.source.id,
+        }))
+        .sort(),
+      item.name,
+    ]);
   };
 
   const buildKey = (data: string): string => {
@@ -271,7 +311,11 @@ async function importLsx(filepath: string, data: Data): Promise<void> {
 function parseCharacterCreationRegion(region: LsxRegion, data: Data) {
   const nodes = getChildNodes(region.node);
   for (const node of nodes) {
-    const visuals = asArray(getAttribute(node, "VisualResource")?.value);
+    const visual = asArray(getAttribute(node, "VisualResource")?.value);
+    const visuals = findChildNodes(node, "VisualUUIDs")
+      .map((x) => gatherAttributesValues(x, "Object"))
+      .concat(visual)
+      .flat();
     const handle = getAttribute(node, "DisplayName")?.handle;
     const id = getAttribute(node, "UUID")?.value;
     if (visuals.length === 0 || !handle || !id) {
@@ -333,6 +377,9 @@ function parseVisualRegion(region: LsxRegion, data: Data) {
 function parseMaterialRegion(region: LsxRegion, data: Data) {
   const nodes = getChildNodes(region.node);
   for (const node of nodes) {
+    const virtualTextures = findChildNodes(node, "VirtualTextureParameters")
+      .map((x) => gatherAttributesValues(x, "ID"))
+      .flat();
     const textures = findChildNodes(node, "Texture2DParameters")
       .map((x) => gatherAttributesValues(x, "ID"))
       .flat();
@@ -341,7 +388,7 @@ function parseMaterialRegion(region: LsxRegion, data: Data) {
       continue;
     }
 
-    data.materialData.set(id, textures);
+    data.materialData.set(id, { virtualTextures, textures });
   }
 }
 
