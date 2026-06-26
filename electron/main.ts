@@ -20,20 +20,14 @@ let mainWindow: BrowserWindow | null;
 process.env.VITE_PUBLIC = VITE_PUBLIC;
 process.env.APP_ROOT = APP_ROOT;
 
-log.transports.console.level = VITE_DEV_SERVER_URL ? "debug" : "info";
-log.transports.remote.level = false;
-log.transports.file.level = "silly";
-log.transports.ipc.level = false;
-log.initialize();
-
 function createWindow() {
   mainWindow = new BrowserWindow({
     icon: path.join(VITE_PUBLIC, "icon.png"),
     webPreferences: {
       preload: path.join(DIRNAME, "preload.mjs"),
     },
-    minWidth: 640,
-    minHeight: 512,
+    minWidth: 960,
+    minHeight: 768,
     width: 1280,
     height: 1024,
   });
@@ -59,7 +53,11 @@ app.on("activate", () => {
   }
 });
 
-app.whenReady().then(createWindow);
+log.transports.console.level = VITE_DEV_SERVER_URL ? "debug" : "info";
+log.transports.remote.level = false;
+log.transports.file.level = "silly";
+log.transports.ipc.level = false;
+log.initialize();
 
 ipcMain.handle("process-pak", async (event, filepath: string) => {
   try {
@@ -220,3 +218,5 @@ ipcMain.handle("clear-cache", async (event) => {
 ipcMain.handle("get-version", async () => {
   return app.getVersion();
 });
+
+app.whenReady().then(createWindow);

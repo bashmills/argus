@@ -22,7 +22,7 @@ export function ItemRow({ onToggle, selected, item }: Props) {
         <p className="font-medium text-white truncate">{item.name}</p>
         <p className="text-gray-400 truncate">{item.visuals.map((x) => x.source.name).join(", ")}</p>
         <p className="text-xs text-gray-500 truncate">
-          {materials.length} materials • {virtualTextures.length} virtual textures • {textures.length} textures
+          {materials.length} Materials • {virtualTextures.length} Virtual Textures • {textures.length} Textures
         </p>
         {item.races && <p className="text-xs text-gray-500 truncate">{item.races.join(", ")}</p>}
         {item.slots && <p className="text-xs text-gray-500 truncate">{item.slots.join(", ")}</p>}
