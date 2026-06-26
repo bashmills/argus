@@ -39,8 +39,19 @@ export function ProcessedView() {
   const value = filter.toLowerCase().trim();
   const filtered = value
     ? items.filter((x) => {
+        for (const visual of x.visuals) {
+          const id = visual.source.name?.toLowerCase()?.trim();
+          if (id?.includes(value)) {
+            return true;
+          }
+        }
+
         const name = x.name.toLowerCase().trim();
-        return name.includes(value);
+        if (name.includes(value)) {
+          return true;
+        }
+
+        return false;
       })
     : items;
 
