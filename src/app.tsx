@@ -16,7 +16,7 @@ export function App() {
     <div className="relative w-full h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col justify-center items-center p-4">
       <Toaster position="top-center" theme="dark" closeButton richColors />
       {appStatus === "waiting" && <SettingsView />}
-      <div className="w-full flex flex-col justify-center items-center max-h-full max-w-5xl backdrop-blur-sm rounded-2xl shadow-2xl space-y-8 p-8 border border-gray-700/50 bg-gray-800/80">
+      <div className={`w-full flex flex-col justify-center items-center ${appStatus !== "processed" ? "max-h-full" : "h-full"} max-w-5xl backdrop-blur-sm rounded-2xl shadow-2xl space-y-8 p-8 border border-gray-700/50 bg-gray-800/80`}>
         {appStatus === "processing" && <ProcessingView />}
         {appStatus === "processed" && <ProcessedView />}
         {appStatus === "exporting" && <ExportingView />}
